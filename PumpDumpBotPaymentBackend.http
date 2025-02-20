@@ -1,6 +1,0 @@
-@PumpDumpBotPaymentBackend_HostAddress = http://localhost:5043
-
-GET {{PumpDumpBotPaymentBackend_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
