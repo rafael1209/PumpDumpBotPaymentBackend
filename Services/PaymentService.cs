@@ -1,24 +1,89 @@
-﻿using PumpDumpBotPaymentBackend.Enums;
+﻿using System.Text;
+using MongoDB.Bson;
 using PumpDumpBotPaymentBackend.Interface;
 using PumpDumpBotPaymentBackend.Models;
+using Newtonsoft.Json;
+using PumpDumpBotPaymentBackend.Enums;
 
 namespace PumpDumpBotPaymentBackend.Services;
 
-public class PaymentService(IPaymentRepository paymentRepository, ITokenValidator tokenValidator) : IPaymentService
+public class PaymentService(
+    IConfiguration configuration,
+    IPaymentRepository paymentRepository,
+    ITokenValidator tokenValidator) : IPaymentService
 {
-    public async Task CreatePaymentAsync(Payment paymentDetails)
-    {
-        await paymentRepository.CreateAsync(paymentDetails);
-    }
+    private readonly HttpClient _httpClient = new HttpClient();
+
+    private readonly string _apiKey = configuration.GetValue<string>("Cryptocloud:ApiKey") ??
+                                         throw new Exception("JCryptocloud:ApiKey not found");
+    private readonly string _shopId = configuration.GetValue<string>("Cryptocloud:ShopId") ??
+                                         throw new Exception("Cryptocloud:ShopId not found");
+
+    private const string BaseUrl = "https://api.cryptocloud.plus";
 
     public async Task IncomingPayment(CryptocloudRequest request)
     {
         if (request.token != null && !tokenValidator.ValidateToken(request.token))
-            return;
+            throw new UnauthorizedAccessException("Invalid token");
 
         if (request.invoice_id == null || request.currency == null || request.status == null)
-            return;
+            throw new ArgumentException("Missing required fields in the request.");
 
-        await paymentRepository.CreateAsync(new Payment(request.invoice_id, request.currency, request.status));
+        if (!ObjectId.TryParse(request.order_id, out var id))
+            throw new ArgumentException($"Invalid order_id format: {request.order_id}");
+
+        var payment = await paymentRepository.GetByIdAsync(id) ??
+                      throw new ArgumentException($"Payment with order_id {request.order_id} not found.");
+
+        payment.Status = Status.Paid;
+
+        await paymentRepository.UpdateAsync(id, payment);
     }
+
+    public async Task<InvoiceApiResponse?> CreateInvoiceAsync(InvoiceRequest request, ObjectId orderId)
+    {
+        var requestBody = new InvoiceApiRequest
+        {
+            ShopId = _shopId,
+            Amount = request.Amount,
+            Currency = request.Currency ?? "USD",
+            OrderId = orderId.ToString(),
+            Email = request.CustomerEmail
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(requestBody);
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Token {_apiKey}");
+
+        var response = await _httpClient.PostAsync($"{BaseUrl}/v2/invoice/create", content);
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception("Error Cryptocloud response is not successful");
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var invoiceApiResponse = JsonConvert.DeserializeObject<InvoiceApiResponse>(responseContent);
+
+        return invoiceApiResponse ?? throw new Exception("Error Cryptocloud create invoice request");
+    }
+
+    public async Task SaveNewInvoiceAsync(ObjectId orderId, string userId, InvoiceApiResponse? newPayment)
+    {
+        if (newPayment?.Result == null)
+            throw new ArgumentNullException(nameof(newPayment), "Payment response is null.");
+
+        if (!Uri.TryCreate(newPayment.Result.Link, UriKind.Absolute, out var paymentLink))
+            throw new UriFormatException($"Invalid payment link: {newPayment.Result.Link}");
+
+        var payment = new Payment(
+            orderId,
+            userId,
+            newPayment.Result.Amount,
+            paymentLink,
+            newPayment.Result.Currency.Code,
+            newPayment.Result.Status
+        );
+
+        await paymentRepository.CreateAsync(payment);
+    }
+
 }

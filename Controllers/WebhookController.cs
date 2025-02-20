@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text;
-using System.Text.Json;
 using PumpDumpBotPaymentBackend.Interface;
 using PumpDumpBotPaymentBackend.Models;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 
 namespace PumpDumpBotPaymentBackend.Controllers
 {
@@ -14,9 +15,16 @@ namespace PumpDumpBotPaymentBackend.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         public async Task<IActionResult> Post([FromForm] CryptocloudRequest request)
         {
-            await paymentService.
+            try
+            {
+                await paymentService.IncomingPayment(request);
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e);
+            }
         }
     }
 }

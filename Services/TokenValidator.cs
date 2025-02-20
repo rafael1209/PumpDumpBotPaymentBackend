@@ -7,7 +7,7 @@ namespace PumpDumpBotPaymentBackend.Services
 {
     public class TokenValidator(IConfiguration configuration) : ITokenValidator
     {
-        private readonly string _secretKey = configuration.GetValue<string>("Jwt:SecretKey") ??
+        private readonly string _secretKey = configuration.GetValue<string>("Cryptocloud:SecretJwtKey") ??
                                              throw new Exception("JwtSettings:SecretKey not found");
 
         public bool ValidateToken(string token)
