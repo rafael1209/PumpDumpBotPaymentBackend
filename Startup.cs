@@ -26,6 +26,12 @@ namespace PumpDumpBotPaymentBackend
             services.AddScoped<ITokenValidator, TokenValidator>();
             services.AddScoped<IPaymentRepository, PaymentRepository>();
             services.AddScoped<IPaymentService, PaymentService>();
+
+
+
+
+
+            services.AddScoped<ITestService, TestService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
