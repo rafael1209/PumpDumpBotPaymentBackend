@@ -44,13 +44,9 @@ namespace PumpDumpBotPaymentBackend
             app.Use(async (context, next) =>
             {
                 if (context.Request.Path == "/")
-                {
                     context.Response.Redirect("/swagger");
-                }
                 else
-                {
                     await next.Invoke();
-                }
             });
 
             app.UseSwagger();
