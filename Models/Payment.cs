@@ -4,7 +4,13 @@ using PumpDumpBotPaymentBackend.Enums;
 
 namespace PumpDumpBotPaymentBackend.Models
 {
-    public class Payment(ObjectId orderId, string userId, decimal amount, Uri paymentUri, string currency, string status)
+    public class Payment(
+        ObjectId orderId,
+        string userId,
+        string productId,
+        decimal amount,
+        string paymentUrl,
+        string status)
     {
         [BsonId]
         public ObjectId Id { get; set; } = orderId;
@@ -12,14 +18,14 @@ namespace PumpDumpBotPaymentBackend.Models
         [BsonElement("userId")]
         public string UserId { get; set; } = userId;
 
+        [BsonElement("productId")]
+        public string ProductId { get; set; } = productId;
+
         [BsonElement("amount")]
         public decimal Amount { get; set; } = amount;
 
-        [BsonElement("currency")]
-        public string Currency { get; set; } = currency;
-
-        [BsonElement("payment-url")]
-        public Uri PaymentUrl { get; set; } = paymentUri;
+        [BsonElement("paymentUrl")]
+        public Uri PaymentUrl { get; set; } = new(paymentUrl);
 
         [BsonElement("status")]
         [BsonRepresentation(BsonType.String)]
@@ -27,7 +33,7 @@ namespace PumpDumpBotPaymentBackend.Models
             ? parsedStatus
             : throw new ArgumentException($"Invalid status value: {status}");
 
-        [BsonElement("created-at-utc")]
+        [BsonElement("createdAtUtc")]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     }
 }

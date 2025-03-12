@@ -12,7 +12,7 @@ public class PaymentService(
     IPaymentRepository paymentRepository,
     ITokenValidator tokenValidator) : IPaymentService
 {
-    private readonly HttpClient _httpClient = new HttpClient();
+    private readonly HttpClient _httpClient = new();
 
     private readonly string _apiKey = configuration.GetValue<string>("Cryptocloud:ApiKey") ??
                                          throw new Exception("JCryptocloud:ApiKey not found");
@@ -35,9 +35,7 @@ public class PaymentService(
         var payment = await paymentRepository.GetByIdAsync(id) ??
                       throw new ArgumentException($"Payment with order_id {request.order_id} not found.");
 
-        payment.Status = Status.Paid;
-
-        await paymentRepository.UpdateAsync(id, payment);
+        await paymentRepository.UpdateStatusAsync(id, Status.Paid);
     }
 
     public async Task<InvoiceApiResponse?> CreateInvoiceAsync(InvoiceRequest request, ObjectId orderId)
@@ -66,7 +64,8 @@ public class PaymentService(
         return invoiceApiResponse ?? throw new Exception("Error Cryptocloud create invoice request");
     }
 
-    public async Task SaveNewInvoiceAsync(ObjectId orderId, string userId, InvoiceApiResponse? newPayment)
+    public async Task SaveNewInvoiceAsync(ObjectId orderId, ObjectId productId, ObjectId userId,
+        InvoiceApiResponse? newPayment)
     {
         if (newPayment?.Result == null)
             throw new ArgumentNullException(nameof(newPayment), "Payment response is null.");
@@ -74,16 +73,9 @@ public class PaymentService(
         if (!Uri.TryCreate(newPayment.Result.Link, UriKind.Absolute, out var paymentLink))
             throw new UriFormatException($"Invalid payment link: {newPayment.Result.Link}");
 
-        var payment = new Payment(
-            orderId,
-            userId,
-            newPayment.Result.Amount,
-            paymentLink,
-            newPayment.Result.Currency.Code,
-            newPayment.Result.Status
-        );
+        var payment = new Payment(orderId: orderId, productId: productId.ToString(), amount: newPayment.Result.Amount,
+            userId: userId.ToString(), paymentUrl: paymentLink.ToString(), status: newPayment.Result.Status);
 
         await paymentRepository.CreateAsync(payment);
     }
-
 }

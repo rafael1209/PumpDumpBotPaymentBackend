@@ -12,14 +12,15 @@ namespace PumpDumpBotPaymentBackend.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] InvoiceRequest request)
         {
-            if (!ObjectId.TryParse(request.UserId, out var id))
+            if (!ObjectId.TryParse(request.UserId, out var userId) || 
+                !ObjectId.TryParse(request.ProductId, out var productId))
                 return BadRequest("Invalid userId");
 
             var orderId = ObjectId.GenerateNewId();
 
-            var response =  await paymentService.CreateInvoiceAsync(request, orderId);
+            var response = await paymentService.CreateInvoiceAsync(request, orderId);
 
-            await paymentService.SaveNewInvoiceAsync(orderId, request.UserId, response);
+            await paymentService.SaveNewInvoiceAsync(orderId, productId, userId, response);
 
             return Json(response);
         }

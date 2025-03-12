@@ -97,11 +97,11 @@
               "type": "Microsoft.ApiManagement/service/apis",
               "name": "PumpDumpBotPaymentBackendapi/PumpDumpBotPaymentBackend",
               "properties": {
-                "displayName": "PumpDumpBotPaymentBackend",
+                "displayName": "PumpDumpAlert Payment API",
                 "apiRevision": "1",
                 "description": null,
                 "subscriptionRequired": true,
-                "serviceUrl": null,
+                "serviceUrl": "https://pumpdumpbotpaymentbackend20250218233122-eafuagg4f5c5fkfp.westeurope-01.azurewebsites.net",
                 "path": "",
                 "protocols": [
                   "https"
