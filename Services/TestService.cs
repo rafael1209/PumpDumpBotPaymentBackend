@@ -1,13 +1,11 @@
-﻿using MongoDB.Driver;
-using PumpDumpBotPaymentBackend.Interface;
+﻿using PumpDumpBotPaymentBackend.Interface;
 
-namespace PumpDumpBotPaymentBackend.Services
+namespace PumpDumpBotPaymentBackend.Services;
+
+public class TestService(IConfiguration configuration) : ITestService
 {
-    public class TestService(IConfiguration configuration) : ITestService
+    public string Test()
     {
-        public string Test()
-        {
-            return $"{DateTime.Now}";
-        }
+        return $"{DateTime.Now}";
     }
 }
